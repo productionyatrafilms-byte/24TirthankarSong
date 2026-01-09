@@ -8,11 +8,15 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 const volumeSlider = document.getElementById("volumeSlider");
 const volIcon = document.getElementById("volIcon");
 
-// Settings Elements
-// const settingsBtn = document.getElementById("settingsBtn");
-// const qualityMenu = document.getElementById("qualityMenu");
-// const qualityOptions = document.querySelectorAll(".quality-option");
-// https://youtu.be/182JTFErO_o?si=XtH0-xXd03I-_EmS
+// Video IDs for different languages
+const videoIds = {
+  English: "Tmv0tYALLSA",
+  Hindi: "w4PzH_8fYb4",
+  Gujrati: "w4PzH_8fYb4",
+};
+
+let currentVideoId = "w4PzH_8fYb4"; // Default video ID
+let isPlayerReady = false;
 
 // Load YouTube API
 const tag = document.createElement("script");
@@ -21,17 +25,26 @@ const firstScriptTag = document.getElementsByTagName("script")[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 function onYouTubeIframeAPIReady() {
+  createPlayer(currentVideoId);
+}
+
+function createPlayer(videoId) {
+  // Destroy existing player if it exists
+  if (player && player.destroy) {
+    player.destroy();
+  }
+
   player = new YT.Player("ytPlayer", {
     height: "100%",
     width: "100%",
-    videoId: "w4PzH_8fYb4",
+    videoId: videoId,
     playerVars: {
       autoplay: 1,
       controls: 0,
       modestbranding: 1,
       rel: 0,
       playsinline: 1,
-      origin: window.location.origin, // Add this line to fix the 'postMessage' error
+      origin: window.location.origin,
     },
     events: {
       onReady: onPlayerReady,
@@ -40,18 +53,8 @@ function onYouTubeIframeAPIReady() {
   });
 }
 
-let isPlayerReady = false;
-
-// function onPlayerReady(event) {
-//   isPlayerReady = true;
-//   wrapper.classList.remove("loading");
-//   setInterval(updateProgress, 100);
-//   player.setVolume(volumeSlider.value);
-//   console.log("YouTube Player is fully initialized.");
-// }
 function onPlayerReady(event) {
   if (typeof event.target.setPlaybackQualityRange === "function") {
-    // Setting both min and max to 'hd720' forces the player to prefer HD
     event.target.setPlaybackQualityRange("hd720", "hd720");
   }
   isPlayerReady = true;
@@ -87,8 +90,10 @@ function updateProgress() {
 
 // Play/Pause Toggle
 toggleBtn.addEventListener("click", () => {
-  const state = player.getPlayerState();
-  state === YT.PlayerState.PLAYING ? player.pauseVideo() : player.playVideo();
+  if (player && player.getPlayerState) {
+    const state = player.getPlayerState();
+    state === YT.PlayerState.PLAYING ? player.pauseVideo() : player.playVideo();
+  }
 });
 
 function updateVolumeSliderFill(slider) {
@@ -109,7 +114,7 @@ function updateVolumeSliderFill(slider) {
 // Volume Control
 volumeSlider.addEventListener("input", (e) => {
   const val = Number(e.target.value);
-  player.setVolume(val);
+  if (player) player.setVolume(val);
   updateVolumeSliderFill(e.target);
   volIcon.className = `bi ${
     val === 0
@@ -122,9 +127,11 @@ volumeSlider.addEventListener("input", (e) => {
 
 // Seek Functionality
 progressContainer.addEventListener("click", (e) => {
-  const rect = progressContainer.getBoundingClientRect();
-  const pos = (e.clientX - rect.left) / rect.width;
-  player.seekTo(pos * player.getDuration());
+  if (player && player.getDuration) {
+    const rect = progressContainer.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    player.seekTo(pos * player.getDuration());
+  }
 });
 
 // Fullscreen Logic
@@ -156,7 +163,7 @@ ytFrameContainer.addEventListener("click", () => {
   }
 });
 
-// --- Translation Logic ---
+// --- Translation & Video Switching Logic ---
 const buttons = {
   English: document.getElementById("englishButton"),
   Hindi: document.getElementById("hindiButton"),
@@ -167,6 +174,19 @@ Object.keys(buttons).forEach((lang) => {
   buttons[lang].addEventListener("click", () => {
     updateText(lang);
     updateButtonStyles(lang);
+
+    // Switch video when language changes
+    const newVideoId = videoIds[lang];
+    if (newVideoId !== currentVideoId) {
+      currentVideoId = newVideoId;
+      wrapper.classList.add("loading"); // Show loading state
+      isPlayerReady = false;
+
+      // Wait a moment for destroy to complete, then recreate player
+      setTimeout(() => {
+        createPlayer(currentVideoId);
+      }, 500);
+    }
   });
 });
 
@@ -201,12 +221,14 @@ function updateText(language) {
 // Initial active state
 updateButtonStyles("English");
 
-// --- Quality Selection Menu Logic ---
-settingsBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  qualityMenu.classList.toggle("show");
-});
+// Settings button logic (uncommented if needed)
+// const settingsBtn = document.getElementById("settingsBtn");
+// const qualityMenu = document.getElementById("qualityMenu");
+// settingsBtn.addEventListener("click", (e) => {
+//   e.stopPropagation();
+//   qualityMenu.classList.toggle("show");
+// });
 
-document.addEventListener("click", () => {
-  qualityMenu.classList.remove("show");
-});
+// document.addEventListener("click", () => {
+//   qualityMenu.classList.remove("show");
+// });
