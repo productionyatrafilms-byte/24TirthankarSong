@@ -15,7 +15,7 @@ const videoIds = {
   Gujrati: "w4PzH_8fYb4",
 };
 
-let currentVideoId = "w4PzH_8fYb4"; // Default video ID
+let currentVideoId = "Tmv0tYALLSA"; // Default video ID
 let isPlayerReady = false;
 
 // Load YouTube API
